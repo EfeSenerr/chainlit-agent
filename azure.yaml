@@ -1,0 +1,45 @@
+name: chainlit-agent
+metadata:
+  template: chainlit-agent@1.0.0
+services:
+  web:
+    project: ./src/chainlit
+    language: python
+    host: containerapp
+    docker:
+      remoteBuild: true
+      context: ../
+      path: ./Dockerfile
+  api:
+    project: ./src/api
+    language: python
+    host: containerapp
+    docker:
+      remoteBuild: true
+      context: ../
+      path: ./Dockerfile      
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      continueOnError: false
+      interactive: true
+      run: infra/hooks/postprovision.sh 
+    windows:
+      shell: pwsh
+      continueOnError: false
+      interactive: true
+      run: infra/hooks/postprovision.ps1
+infra:
+    provider: "bicep"
+
+pipeline:
+  variables:
+    - AZURE_ENV_NAME
+    - AZURE_LOCATION
+    - SERVICE_API_IMAGE_NAME
+    - SERVICE_WEB_IMAGE_NAME    
+    - AZURE_OPENAI_ENDPOINT
+    - AZURE_EMBEDDING_NAME
+    - AZURE_SEARCH_ENDPOINT
+    - AZURE_SEARCH_INDEX

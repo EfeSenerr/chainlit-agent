@@ -1,0 +1,41 @@
+product_id,product_name,date,count,unit_price
+1,TrailMaster X4 Tent,2024-05-15,7,95.0  
+1,TrailMaster X4 Tent,2024-08-22,3,90.0  
+2,Adventurer Pro Backpack,2024-03-10,5,85.0  
+2,Adventurer Pro Backpack,2024-11-01,2,87.0  
+3,Summit Breeze Jacket,2024-04-05,4,80.0  
+3,Summit Breeze Jacket,2024-09-18,6,82.0  
+4,TrekReady Hiking Boots,2024-06-25,8,98.0  
+4,TrekReady Hiking Boots,2024-10-12,1,97.0  
+5,BaseCamp Folding Table,2024-02-14,3,60.0  
+5,BaseCamp Folding Table,2024-07-30,7,62.0  
+6,EcoFire Camping Stove,2024-01-22,5,78.0  
+6,EcoFire Camping Stove,2024-12-05,2,80.0  
+7,CozyNights Sleeping Bag,2024-03-30,6,70.0  
+7,CozyNights Sleeping Bag,2024-08-14,4,72.0  
+8,Alpine Explorer Tent,2024-05-10,3,99.0  
+8,Alpine Explorer Tent,2024-10-25,9,100.0  
+9,SummitClimber Backpack,2024-04-18,4,90.0  
+9,SummitClimber Backpack,2024-11-09,6,92.0  
+10,TrailBlaze Hiking Pants,2024-06-03,5,73.0  
+10,TrailBlaze Hiking Pants,2024-09-20,7,75.0  
+11,TrailWalker Hiking Shoes,2024-03-12,2,85.0  
+11,TrailWalker Hiking Shoes,2024-08-29,8,87.0  
+12,TrekMaster Camping Chair,2024-01-19,6,55.0  
+12,TrekMaster Camping Chair,2024-07-25,3,57.0  
+13,PowerBurner Camping Stove,2024-02-28,4,95.0  
+13,PowerBurner Camping Stove,2024-09-15,2,97.0  
+14,MountainDream Sleeping Bag,2024-05-06,8,88.0  
+14,MountainDream Sleeping Bag,2024-10-18,7,90.0  
+15,SkyView 2-Person Tent,2024-04-22,3,75.0  
+15,SkyView 2-Person Tent,2024-11-04,5,78.0  
+16,TrailLite Daypack,2024-06-27,6,65.0  
+16,TrailLite Daypack,2024-09-10,4,67.0  
+17,RainGuard Hiking Jacket,2024-03-22,7,85.0  
+17,RainGuard Hiking Jacket,2024-08-02,2,87.0  
+18,TrekStar Hiking Sandals,2024-01-10,5,70.0  
+18,TrekStar Hiking Sandals,2024-07-18,3,72.0  
+19,Adventure Dining Table,2024-02-25,8,95.0  
+19,Adventure Dining Table,2024-09-05,6,97.0  
+20,CompactCook Camping Stove,2024-05-14,7,58.0  
+20,CompactCook Camping Stove,2024-10-08,4,60.0  
