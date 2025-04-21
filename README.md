@@ -1,6 +1,6 @@
 # Chainlit Agent: Intelligent Assistant with Azure AI Agent
 
-[![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=brightgreen&logo=github)](https://github.com/codespaces/new/chainlit-agent)
+[![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=brightgreen&logo=github)](https://github.com/codespaces/new?template_repository=zhenbzha/chainlit-agent&ref=main&location=WestEurope)
 [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/zhenbzha/chainlit-agent)
 
 
@@ -81,7 +81,8 @@ Choose the option that best suits your needs and development style.
 
 1. You can run this template virtually by using GitHub Codespaces. Click this button to open a web-based VS Code instance in your browser:
 
-    [![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=brightgreen&logo=github)](https://github.com/codespaces/new/yourusername/chainlit-agent)
+    [![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=brightgreen&logo=github)](https://github.com/codespaces/new?template_repository=zhenbzha/chainlit-agent&ref=main&location=WestEurope
+    )
 
 1. Once the codespaces environment is ready (this can take several minutes), open a new terminal in that VS Code instance - and proceed to the [Development](#development) step.
 
