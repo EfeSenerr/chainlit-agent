@@ -6,7 +6,7 @@ param location = readEnvironmentVariable('AZURE_LOCATION', 'canadaeast')
 // in github action, it will be the service principal for github action. you create that with azd pipeline
 param principalId = readEnvironmentVariable('AZURE_PRINCIPAL_ID', '')
 
-param aiSearchIndexName  = readEnvironmentVariable('AZURE_SEARCH_INDEX', 'contoso-products')
+param aiSearchIndexName  = readEnvironmentVariable('AZURE_SEARCH_INDEX', 'parssedindexer1')
 // this will be set by github action
 param runningOnGh = readEnvironmentVariable('GITHUB_ACTIONS', '')
 
