@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
 import sys
 from azure.identity import DefaultAzureCredential
@@ -10,6 +7,9 @@ from azure.ai.projects.models import ToolSet
 from azure.search.documents import SearchClient
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from utils.env_util import get_aifound_proj_conn_string, get_aisearch_conn
+
+from dotenv import load_dotenv
+load_dotenv()
 
 connection_string = get_aifound_proj_conn_string()
 project_client = AIProjectClient.from_connection_string(
