@@ -49,18 +49,46 @@ async def call_backend_with_retry(data, retries=MAX_RETRIES):
     """Call backend API with retry logic and timeout handling"""
     for attempt in range(retries + 1):
         try:
-            # Show typing indicator for longer requests
-            async with cl.Step(name="🔍 Searching knowledge base..." if attempt == 0 else f"🔄 Retrying... (attempt {attempt + 1})") as step:
-                response = requests.post(
-                    api_url, 
-                    json=data, 
-                    timeout=REQUEST_TIMEOUT,
-                    headers={"Content-Type": "application/json"}
-                )
+            # Show typing indicator for requests
+            step_name = "🤔 Thinking..." if attempt == 0 else f"🔄 Retrying... (attempt {attempt + 1})"
+            async with cl.Step(name=step_name) as step:
+                # Start the request
+                start_time = asyncio.get_event_loop().time()
+                
+                # Create a task for the HTTP request
+                async def make_request():
+                    return requests.post(
+                        api_url, 
+                        json=data, 
+                        timeout=REQUEST_TIMEOUT,
+                        headers={"Content-Type": "application/json"}
+                    )
+                
+                # Wait for either the request to complete or 5 seconds to show progress
+                try:
+                    response = await asyncio.wait_for(
+                        asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(
+                            api_url, 
+                            json=data, 
+                            timeout=REQUEST_TIMEOUT,
+                            headers={"Content-Type": "application/json"}
+                        )), 
+                        timeout=5.0
+                    )
+                except asyncio.TimeoutError:
+                    # If it takes longer than 5 seconds, update the step message
+                    step.name = "🔍 Searching knowledge base..." if attempt == 0 else f"🔄 Still working... (attempt {attempt + 1})"
+                    # Continue waiting for the full timeout
+                    response = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(
+                        api_url, 
+                        json=data, 
+                        timeout=REQUEST_TIMEOUT,
+                        headers={"Content-Type": "application/json"}
+                    ))
                 
                 if response.status_code == 200:
                     result = response.json()
-                    step.output = "✅ Search completed"
+                    step.output = "✅ Response completed"
                     return result, None
                 elif response.status_code == 408:
                     error_msg = "Request timed out on the server. Please try a simpler question."
