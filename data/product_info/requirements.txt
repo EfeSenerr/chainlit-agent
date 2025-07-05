@@ -1,0 +1,25 @@
+# === MAIN INDEXING PIPELINE (create-azure-search.py) ===
+# Core dependencies for multi-format document indexing
+azure-search-documents
+azure-identity
+openai
+pandas
+python-dotenv
+
+# File format support
+PyPDF2>=3.0.0          # For PDF processing
+openpyxl>=3.0.0         # For Excel file processing
+chardet>=5.0.0          # For encoding detection (optional)
+
+# === IMAGE PREPROCESSING (convert_base64_to_text.py) ===
+# Only needed if you have markdown files with base64 images
+# (No additional dependencies - uses same openai + azure-identity)
+
+# === OPTIONAL DEPENDENCIES ===
+# Development dependencies
+jupyter                 # If you want to use the notebook version
+
+# Legacy image processing (no longer used in main pipeline)
+# azure-ai-vision>=1.0.0b1  # Only needed if you modify convert_base64_to_text.py to use Azure Vision
+# Pillow>=9.0.0           # Only needed for advanced image processing
+# requests>=2.28.0        # Usually already installed with other dependencies
