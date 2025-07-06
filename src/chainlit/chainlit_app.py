@@ -7,6 +7,7 @@ import io
 import numpy as np
 import wave
 import audioop
+import time
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
@@ -15,6 +16,7 @@ from utils.env_util import get_aifound_proj_conn_string
 # Configuration
 REQUEST_TIMEOUT = 35  # seconds - slightly longer than backend timeout
 MAX_RETRIES = 2
+MIN_REQUEST_INTERVAL = 2.0  # Minimum seconds between requests
 
 # Audio configuration
 SILENCE_THRESHOLD = 3500  # Adjust based on your audio level
@@ -287,6 +289,18 @@ async def call_backend_with_retry(data, retries=MAX_RETRIES):
 @cl.on_message
 async def on_message(msg: cl.Message):    
     question = msg.content.strip()
+    
+    # Rate limiting check
+    last_request_time = cl.user_session.get("last_request_time", 0)
+    current_time = time.time()
+    time_since_last = current_time - last_request_time
+    
+    if time_since_last < MIN_REQUEST_INTERVAL:
+        wait_time = MIN_REQUEST_INTERVAL - time_since_last
+        await cl.Message(content=f"⏳ Please wait {wait_time:.1f} more seconds before sending another message.").send()
+        return
+    
+    cl.user_session.set("last_request_time", current_time)
     
     # Validate input
     if not question:

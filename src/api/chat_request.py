@@ -430,6 +430,38 @@ def improve_citations(assistant_message, search_results):
 def generate_response_agent(question, thread_id): 
     """Generate response with timeout and error handling"""
     try:
+        # First, check if there are any active runs on this thread
+        print(f"Checking for active runs on thread {thread_id}")
+        try:
+            runs = project_client.agents.list_runs(thread_id=thread_id)
+            active_runs = [run for run in runs.data if run.status in ["in_progress", "requires_action"]]
+            
+            if active_runs:
+                print(f"Found {len(active_runs)} active runs on thread {thread_id}. Waiting for them to complete...")
+                
+                # Wait for active runs to complete (with timeout)
+                wait_start = time.time()
+                while active_runs and (time.time() - wait_start) < 30:  # 30 second timeout
+                    time.sleep(2)
+                    runs = project_client.agents.list_runs(thread_id=thread_id)
+                    active_runs = [run for run in runs.data if run.status in ["in_progress", "requires_action"]]
+                    if active_runs:
+                        print(f"Still waiting... {len(active_runs)} active runs remaining")
+                
+                if active_runs:
+                    print(f"Timeout waiting for active runs to complete. Cancelling them...")
+                    for active_run in active_runs:
+                        try:
+                            project_client.agents.cancel_run(thread_id=thread_id, run_id=active_run.id)
+                            print(f"Cancelled run {active_run.id}")
+                        except Exception as cancel_error:
+                            print(f"Error cancelling run {active_run.id}: {cancel_error}")
+                    time.sleep(1)  # Brief pause after cancellation
+                    
+        except Exception as check_error:
+            print(f"Error checking for active runs: {check_error}")
+            # Continue anyway - the create_message call will fail if there's really an active run
+        
         print(f"Creating message for thread {thread_id}")
         message = project_client.agents.create_message(        
             thread_id=thread_id,
@@ -636,12 +668,30 @@ def generate_response_agent(question, thread_id):
             }
             
     except Exception as e:
+        error_message = str(e)
         print(f"Unexpected error in generate_response_agent: {e}")
-        return {
-            "question": question, 
-            "answer": "I apologize, but I encountered an unexpected error. Please try again.",
-            "error": str(e)
-        }
+        
+        # Check for specific "active run" error
+        if "while a run" in error_message and "is active" in error_message:
+            print(f"Detected concurrent run error - suggesting retry")
+            return {
+                "question": question, 
+                "answer": "It looks like there's already a request being processed. Please wait a moment and try again.",
+                "error": "Concurrent request detected"
+            }
+        elif "Can't add messages to thread" in error_message:
+            print(f"Detected thread messaging error - suggesting retry")
+            return {
+                "question": question, 
+                "answer": "The conversation thread is currently busy. Please wait a moment and try again.",
+                "error": "Thread busy"
+            }
+        else:
+            return {
+                "question": question, 
+                "answer": "I apologize, but I encountered an unexpected error. Please try again.",
+                "error": str(e)
+            }
 
 def transcribe_audio_to_text(audio_file_path):
     """Transcribe audio file to text using Azure OpenAI Whisper"""
