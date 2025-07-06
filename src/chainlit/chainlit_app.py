@@ -53,6 +53,8 @@ I can help you find accurate, verified information from my knowledge base. Here 
 - I only provide information that I can verify from my knowledge base
 - If I don't have information on a topic, I'll let you know
 - Responses may take a few seconds as I search through the knowledge base
+- Please note that our tool does not claim to provide you with the absolute truth. Despite careful selection of the sources for our database, there may still be errors in the data itself, or incorrect citations and references in the chatbot itself. If you have any questions about the information in the sources, we recommend that you always contact the author or publishing institution.
+- The Description texts for csv and Excel data sets, as well as for graphics and illustrations from PDF sources were created by a GPT agent. These were of course checked for correctness by our team, but not completely written by us manually.
 
 Feel free to ask me anything! 🤔"""
     
