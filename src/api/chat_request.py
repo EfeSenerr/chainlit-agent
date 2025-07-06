@@ -43,9 +43,34 @@ aisearch_conn_id = get_aisearch_conn()
 # Initialize agent AI search tool and add the search index connection ID and index name
 ai_search = AzureAISearchTool(index_connection_id=aisearch_conn_id, index_name=index_name, query_type="vector_semantic_hybrid")
 
+from azure.ai.projects.models import CustomPythonTool
+from duckduckgo_search import DDGS
+
+def web_search_tool(query):
+    results = []
+    with DDGS() as ddgs:
+        for r in ddgs.text(query, region="wt-wt", safesearch="off"):
+            results.append({
+                "title": r.get("title"),
+                "snippet": r.get("body"),
+                "url": r.get("href"),
+            })
+            if len(results) >= 5:  # Limit to top 5
+                break
+    return results
+
+# Wrap as an Azure CustomPythonTool
+web_tool = CustomPythonTool(
+    name="web_search",
+    func=web_search_tool,
+    description="Search the public web for factual information if the knowledge base does not have an answer."
+)
+
+
 # Initialize agent toolset with AI search
 toolset = ToolSet()
 toolset.add(ai_search)
+toolset.add(web_tool)
 
 agent = project_client.agents.create_agent(
     model="gpt-4o",
