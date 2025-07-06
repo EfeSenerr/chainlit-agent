@@ -1,4 +1,4 @@
-# Chainlit Agent: Intelligent Assistant with Azure AI Agent
+# Fact-Checking Assistant: AI-Powered Verification with Azure OpenAI
 
 [![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=brightgreen&logo=github)](https://github.com/codespaces/new?template_repository=zhenbzha/chainlit-agent&ref=main&location=WestEurope)
 [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/zhenbzha/chainlit-agent)
@@ -27,31 +27,46 @@
 
 ## Overview
 
-This project implements an intelligent assistant that showcases:
+This project implements a comprehensive **fact-checking assistant** that provides verified, cited answers from a knowledge base. The assistant combines multiple AI capabilities to help users verify information, analyze data, and get reliable insights through various interaction modes.
 
-1. Azure AI Foundry SDK for building, deploying, and managing AI applications at scale
-2. Azure AI Agents for orchestrating complex tasks and building extensible AI solutions
-3. A Chainlit-based chat interface for interactive user engagement
-4. FastAPI endpoints for programmatic access
+**Key Use Cases:**
+- **Fact Verification**: Get verified answers with proper citations from a curated knowledge base
+- **Voice Queries**: Ask questions using speech-to-text powered by Azure OpenAI Whisper
+- **Document Analysis**: Upload and analyze CSV/Excel files to extract insights and generate markdown reports
+- **Interactive Chat**: Real-time conversations with context-aware responses and source attribution
+
+The system is built with enterprise-grade Azure services and provides both web interface and API access for integration flexibility.
 
 ## Features
 
-The project provides the following features:
+The fact-checking assistant provides comprehensive verification and analysis capabilities:
 
-- [Chainlit](https://docs.chainlit.io) for creating interactive chat interfaces
-- [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/) for advanced language model capabilities
-- [Azure AI Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search) for semantic search and information retrieval
-- [Azure AI Agents](https://learn.microsoft.com/azure/ai-services/agents/overview) for task orchestration
-- [FastAPI](https://fastapi.tiangolo.com/) for REST API endpoints
-- [Azure Container Apps](https://learn.microsoft.com/azure/container-apps/overview) for cloud-native application hosting
-- Docker containerization for deployment flexibility
+### 🎯 **Core Features**
+- **Fact-Checking Chat**: Interactive conversations with verified answers and source citations
+- **Voice Input**: Speech-to-text using Azure OpenAI Whisper (press `P` to record)
+- **Document Analysis**: Process CSV and Excel files to generate comprehensive markdown reports
+- **Knowledge Base Search**: Semantic search through indexed documents and data sources
+- **Source Attribution**: All responses include proper citations and references
 
-It also comes with:
-- Sample implementation of both chat and API interfaces
-- Development environment setup with VS Code
-- Azure service integration examples
-- Deployment configurations for Azure
-- Pre-populated with Contoso sample data (customizable for your specific data needs)
+### 🛠 **Technical Stack**
+- **[Chainlit](https://docs.chainlit.io)** - Interactive chat interface with voice recording
+- **[FastAPI](https://fastapi.tiangolo.com/)** - REST API endpoints for programmatic access
+- **[Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/)** - GPT-4o for analysis and Whisper for speech-to-text
+- **[Azure AI Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search)** - Semantic search and information retrieval
+- **[Azure Container Apps](https://learn.microsoft.com/azure/container-apps/overview)** - Cloud-native application hosting
+- **Docker** - Containerization for deployment flexibility
+
+### 📊 **Data Processing**
+- **CSV Analysis**: Automated processing of CSV files with statistical insights
+- **Excel Analysis**: Smart processing of Excel files (first 18 rows for efficiency)
+- **Markdown Generation**: Conversion of data insights into searchable markdown format
+- **Image-to-Text**: Base64 image extraction from documents using GPT-4o Vision
+
+### 🔧 **Development Tools**
+- Pre-configured VS Code development environment
+- Azure service integration with Entra ID authentication
+- Comprehensive deployment configurations
+- Sample datasets and testing utilities
 
 ## Pre-requisites
 
@@ -174,10 +189,129 @@ To test the application in your local environment:
     ```
 
 3. Testing the Components:
-   - For API: Access http://localhost:8000/docs to test endpoints via Swagger UI
-   - For Chat: Access http://localhost to test the chat interface
-   - Try different types of queries to ensure proper handling
+   - **API Testing**: Access http://localhost:8000/docs to test endpoints via Swagger UI
+   - **Chat Interface**: Access http://localhost to test the chat interface
+   - **Voice Input**: Press `P` key in the chat to test speech-to-text functionality
+   - **Document Analysis**: Use the CSV/Excel analysis scripts to test data processing
    - Verify Azure service integrations are working correctly
+
+4. Data Processing (Optional):
+   ```bash
+   # Analyze CSV files for knowledge base
+   python analyze_csv_to_markdown.py ./data/product_info/data/
+   
+   # Analyze Excel files for knowledge base
+   python analyze_excel_to_markdown.py ./data/product_info/data/
+   
+   # Convert base64 images in markdown to text
+   python data/product_info/convert_base64_to_text.py
+   ```
+
+## Deployment to Azure
+
+After developing and testing locally, here's how to deploy your changes to Azure:
+
+### 🚀 **Quick Deployment (Recommended)**
+
+If you have an existing Azure deployment:
+
+```bash
+# Deploy both services with latest changes
+azd deploy
+
+# Or deploy individual services
+azd deploy web    # Deploy Chainlit frontend only
+azd deploy api    # Deploy FastAPI backend only
+```
+
+### 🔧 **Full Redeployment Process**
+
+For comprehensive updates or new deployments:
+
+<details>
+<summary>📋 Step-by-Step Deployment Guide</summary>
+
+#### 1. **Prepare Your Environment**
+```bash
+# Ensure you're authenticated
+az login --use-device-code
+azd auth login --use-device-code
+
+# Check current environment
+azd env list
+azd env get-values
+```
+
+#### 2. **Deploy Infrastructure and Code**
+```bash
+# Full provision and deploy (for new environments)
+azd up
+
+# Or update existing deployment
+azd deploy
+```
+
+#### 3. **Verify Deployment**
+```bash
+# Get deployment URLs
+azd env get-values | grep -E "(WEB_URI|API_URI)"
+
+# Test the endpoints
+curl https://your-api-app.azurecontainerapps.io/api/test
+```
+
+#### 4. **Update Knowledge Base (If Needed)**
+```bash
+# If you've processed new CSV/Excel files, update the search index
+python data/product_info/setup_pipeline.py
+```
+
+</details>
+
+### 🔍 **Deployment Troubleshooting**
+
+<details>
+<summary>Common Issues and Solutions</summary>
+
+#### **Container Build Failures**
+```bash
+# Check logs
+azd deploy --debug
+
+# Force rebuild containers
+azd deploy --no-cache
+```
+
+#### **Environment Variable Issues**
+```bash
+# Verify environment variables
+azd env get-values
+
+# Set missing variables
+azd env set AZURE_OPENAI_ENDPOINT "https://your-endpoint.openai.azure.com/"
+azd env set AZURE_WHISPER_MODEL "whisper-1"
+```
+
+#### **Service Connection Issues**
+```bash
+# Check service status
+az containerapp list --resource-group rg-bullshtfactchecker --output table
+
+# View service logs
+az containerapp logs show --name <app-name> --resource-group rg-bullshtfactchecker
+```
+
+</details>
+
+### 📊 **Monitoring Your Deployment**
+
+After deployment, monitor your application:
+
+1. **Azure Portal**: Visit https://portal.azure.com and navigate to resource group `rg-bullshtfactchecker`
+2. **Application URLs**: 
+   - Chainlit Interface: `https://<your-web-app>.azurecontainerapps.io`
+   - API Documentation: `https://<your-api-app>.azurecontainerapps.io/docs`
+3. **Logs**: Use Azure Container Apps logs or Application Insights for monitoring
 
 ## Guidance
 
@@ -225,11 +359,17 @@ Consider implementing these additional security measures:
 
 ## Resources
 
+### 📚 **Documentation**
+1. [Azure Deployment Guide](./AZURE_DEPLOYMENT_GUIDE.md) - Comprehensive deployment instructions
+2. [Speech Integration Guide](./SPEECH_INTEGRATION.md) - Voice input setup and usage
+3. [Excel Analysis Guide](./EXCEL_ANALYSIS_GUIDE.md) - Document processing and analysis
+
+### 🔗 **External Resources**
 1. [Chainlit Documentation](https://docs.chainlit.io)
 2. [Azure OpenAI Documentation](https://learn.microsoft.com/azure/ai-services/openai/)
 3. [Azure AI Search Documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
-4. [Azure AI Agents Documentation](https://learn.microsoft.com/azure/ai-services/agents/overview)
-5. [FastAPI Documentation](https://fastapi.tiangolo.com)
+4. [FastAPI Documentation](https://fastapi.tiangolo.com)
+5. [Azure Container Apps Documentation](https://learn.microsoft.com/azure/container-apps/overview)
 
 ## Code of Conduct
 
