@@ -1,14 +1,24 @@
-# Welcome to Chainlit! 🚀🤖
+# Fact-Checking Assistant �✅
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+Welcome to your intelligent fact-checking assistant! This tool helps you find accurate, verified information from a trusted knowledge base.
 
-## Useful Links 🔗
+## What This Tool Does 🎯
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+- **Fact Verification:** Ask questions and get answers backed by verified sources
+- **Source Citations:** Every factual claim comes with proper citations from the knowledge base
+- **Intelligent Search:** Uses Azure AI to search through documents and data for accurate information
+- **Error Prevention:** Only provides information that can be verified - no hallucinations or made-up facts
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
+## How to Use 💬
 
-## Welcome screen
+1. **Ask Any Question:** Type your question in the chat below
+2. **Get Verified Answers:** Receive responses with citations from trusted sources
+3. **Review Sources:** Check the provided citations to verify the information
 
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+## What to Expect ⏱️
+
+- Simple greetings get instant responses
+- Fact-checking queries may take a few seconds as we search the knowledge base
+- You'll always know when we're searching vs. just thinking
+
+Ready to start fact-checking? Ask me anything! 🤔
