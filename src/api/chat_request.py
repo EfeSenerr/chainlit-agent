@@ -10,6 +10,7 @@ from azure.ai.projects.models import AzureAISearchTool
 from azure.ai.projects.models import ToolSet
 from azure.search.documents import SearchClient
 from openai import AzureOpenAI
+from azure.ai.agents.models import OpenApiConnectionAuthDetails
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from utils.env_util import get_aifound_proj_conn_string, get_aisearch_conn
 
@@ -43,34 +44,24 @@ aisearch_conn_id = get_aisearch_conn()
 # Initialize agent AI search tool and add the search index connection ID and index name
 ai_search = AzureAISearchTool(index_connection_id=aisearch_conn_id, index_name=index_name, query_type="vector_semantic_hybrid")
 
-from azure.ai.projects.models import CustomPythonTool
-from duckduckgo_search import DDGS
+from azure.ai.agents.models import OpenApiTool
 
-def web_search_tool(query):
-    results = []
-    with DDGS() as ddgs:
-        for r in ddgs.text(query, region="wt-wt", safesearch="off"):
-            results.append({
-                "title": r.get("title"),
-                "snippet": r.get("body"),
-                "url": r.get("href"),
-            })
-            if len(results) >= 5:  # Limit to top 5
-                break
-    return results
+import json
 
-# Wrap as an Azure CustomPythonTool
-web_tool = CustomPythonTool(
+with open("./src/api/openapi.json", "r") as f:
+    openapi_spec = json.load(f)
+
+openapi_tool = OpenApiTool(
     name="web_search",
-    func=web_search_tool,
-    description="Search the public web for factual information if the knowledge base does not have an answer."
+    spec=openapi_spec, 
+    auth= OpenApiConnectionAuthDetails(),
+    description="Web search using DuckDuckGo for public information"
 )
-
 
 # Initialize agent toolset with AI search
 toolset = ToolSet()
 toolset.add(ai_search)
-toolset.add(web_tool)
+toolset.add(openapi_tool)
 
 agent = project_client.agents.create_agent(
     model="gpt-4o",
@@ -86,6 +77,7 @@ agent = project_client.agents.create_agent(
         4. You may engage in general conversation without searching, but ANY factual claims must be verified
         5. You MUST provide a citation or reference from the knowledge base when giving factual information.
         6. If multiple relevant sources are found, summarize the most reliable information and cite all applicable sources.
+        7. First use the knowledge base search tool. If you cannot find an answer, use the web search tool. Always cite your sources.
 
         Citation format:
         - Always clearly indicate the source (e.g., [Source: XYZ Database], [Source: Knowledge Base: Product Guide 2024], etc.)
