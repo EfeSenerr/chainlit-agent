@@ -1,12 +1,13 @@
 import pandas as pd
 import requests
+import uuid
 from pathlib import Path
 
 # === Configuration ===
 INPUT_FILE = "Questions_eval.xlsx"
 OUTPUT_FILE = "Evaluation.xlsx"
-API_URL = "http://localhost:8000/api/generate_response"  # 
-NUM_RUNS = 2  # 
+API_URL = "http://localhost:8000/api/generate_response"
+NUM_RUNS = 2  # Number of times to ask each question
 
 # === Load input file ===
 input_path = Path(INPUT_FILE)
@@ -24,15 +25,25 @@ for run_index in range(1, NUM_RUNS + 1):
     df[col_name] = ""
 
     print(f"\n🚀 Starting Run {run_index}/{NUM_RUNS}...")
+
+    # Optionally reuse or generate new thread ID per run
+    thread_id = str(uuid.uuid4())  # or use f"eval-thread-{run_index}"
+
     for i, row in df.iterrows():
         question = str(row["Question"])
+        payload = {
+            "question": question,
+            "thread_id": thread_id
+        }
+
         try:
-            res = res = requests.post(API_URL, data={"question": question})
+            res = requests.post(API_URL, json=payload, headers={"Content-Type": "application/json"})
             res.raise_for_status()
             data = res.json()
             answer = data.get("answer", "No answer returned")
         except Exception as e:
             answer = f"Error: {str(e)}"
+
         df.at[i, col_name] = answer
         print(f"✅ Q{i+1}: {question[:50]}... → Response length: {len(answer)}")
 
