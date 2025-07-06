@@ -5,3 +5,4 @@ azure-identity==1.21.0
 azure-ai-projects~=1.0.0b8
 chainlit~=2.4.1
 openai~=1.72.0
+numpy

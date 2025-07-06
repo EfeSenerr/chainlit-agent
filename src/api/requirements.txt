@@ -13,6 +13,7 @@ pandas
 azure-monitor-opentelemetry-exporter~=1.0.0b36
 opentelemetry-instrumentation-fastapi~=0.53b1
 jupyter
+python-multipart
 opentelemetry-instrumentation~=0.53b1
 azure-identity==1.21.0
 azure-ai-projects~=1.0.0b8
