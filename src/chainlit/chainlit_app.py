@@ -3,6 +3,10 @@ import os
 import chainlit as cl
 import requests
 import asyncio
+import io
+import numpy as np
+import wave
+import audioop
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
@@ -12,12 +16,18 @@ from utils.env_util import get_aifound_proj_conn_string
 REQUEST_TIMEOUT = 35  # seconds - slightly longer than backend timeout
 MAX_RETRIES = 2
 
+# Audio configuration
+SILENCE_THRESHOLD = 3500  # Adjust based on your audio level
+SILENCE_TIMEOUT = 1300.0  # Milliseconds of silence to consider the turn finished
+
 env = os.getenv("ENVIRONMENT", "")
 base_url = os.getenv("API_URL")
 if env == "azure": 
-    api_url = f"{base_url}/api/generate_response"    
+    api_url = f"{base_url}/api/generate_response"
+    speech_api_url = f"{base_url}/api/speech_to_response"
 else:
     api_url = "http://localhost:8000/api/generate_response"
+    speech_api_url = "http://localhost:8000/api/speech_to_response"
 
 connection_string = get_aifound_proj_conn_string()
 project_client = AIProjectClient.from_connection_string(
@@ -35,6 +45,7 @@ I can help you find accurate, verified information from my knowledge base. Here 
 - Answer questions using verified information from my knowledge base
 - Provide citations and sources for factual claims
 - Help with research and fact-checking
+- Process voice messages (press `P` to talk!)
 
 ⚠️ **Please note:**
 - I only provide information that I can verify from my knowledge base
@@ -44,6 +55,148 @@ I can help you find accurate, verified information from my knowledge base. Here 
 Feel free to ask me anything! 🤔"""
     
     await cl.Message(content=welcome_message).send()
+
+@cl.on_audio_start
+async def on_audio_start():
+    """Initialize audio recording session"""
+    cl.user_session.set("silent_duration_ms", 0)
+    cl.user_session.set("is_speaking", False)
+    cl.user_session.set("audio_chunks", [])
+    return True
+
+@cl.on_audio_chunk
+async def on_audio_chunk(chunk: cl.InputAudioChunk):
+    """Process incoming audio chunks and detect silence"""
+    audio_chunks = cl.user_session.get("audio_chunks")
+
+    if audio_chunks is not None:
+        audio_chunk = np.frombuffer(chunk.data, dtype=np.int16)
+        audio_chunks.append(audio_chunk)
+
+    # If this is the first chunk, initialize timers and state
+    if chunk.isStart:
+        cl.user_session.set("last_elapsed_time", chunk.elapsedTime)
+        cl.user_session.set("is_speaking", True)
+        return
+
+    audio_chunks = cl.user_session.get("audio_chunks")
+    last_elapsed_time = cl.user_session.get("last_elapsed_time")
+    silent_duration_ms = cl.user_session.get("silent_duration_ms")
+    is_speaking = cl.user_session.get("is_speaking")
+
+    # Calculate the time difference between this chunk and the previous one
+    time_diff_ms = chunk.elapsedTime - last_elapsed_time
+    cl.user_session.set("last_elapsed_time", chunk.elapsedTime)
+
+    # Compute the RMS (root mean square) energy of the audio chunk
+    audio_energy = audioop.rms(chunk.data, 2)  # Assumes 16-bit audio (2 bytes per sample)
+
+    if audio_energy < SILENCE_THRESHOLD:
+        # Audio is considered silent
+        silent_duration_ms += time_diff_ms
+        cl.user_session.set("silent_duration_ms", silent_duration_ms)
+        if silent_duration_ms >= SILENCE_TIMEOUT and is_speaking:
+            cl.user_session.set("is_speaking", False)
+            await process_audio()
+    else:
+        # Audio is not silent, reset silence timer and mark as speaking
+        cl.user_session.set("silent_duration_ms", 0)
+        if not is_speaking:
+            cl.user_session.set("is_speaking", True)
+
+async def process_audio():
+    """Process recorded audio and send to backend for transcription and response"""
+    # Get the audio buffer from the session
+    if audio_chunks := cl.user_session.get("audio_chunks"):
+        try:
+            # Concatenate all chunks
+            concatenated = np.concatenate(list(audio_chunks))
+
+            # Create an in-memory binary stream
+            wav_buffer = io.BytesIO()
+
+            # Create WAV file with proper parameters
+            with wave.open(wav_buffer, "wb") as wav_file:
+                wav_file.setnchannels(1)  # mono
+                wav_file.setsampwidth(2)  # 2 bytes per sample (16-bit)
+                wav_file.setframerate(24000)  # sample rate (24kHz PCM)
+                wav_file.writeframes(concatenated.tobytes())
+
+            # Reset buffer position
+            wav_buffer.seek(0)
+            
+            # Reset audio chunks for next recording
+            cl.user_session.set("audio_chunks", [])
+
+            # Check if audio is long enough
+            frames = len(concatenated)
+            rate = 24000
+            duration = frames / float(rate)
+            
+            if duration <= 1.0:
+                await cl.Message(content="⚠️ The audio is too short, please try again.").send()
+                return
+
+            audio_buffer = wav_buffer.getvalue()
+
+            # Show the audio to user
+            input_audio_el = cl.Audio(content=audio_buffer, mime="audio/wav")
+
+            # Get or create thread
+            thread = cl.user_session.get("user_thread")
+            if thread is None:
+                try:
+                    thread = project_client.agents.create_thread()
+                    cl.user_session.set("user_thread", thread)
+                except Exception as e:
+                    await cl.Message(content=f"❌ Error creating conversation thread: {str(e)}").send()
+                    return
+
+            # Send audio to backend for processing
+            async with cl.Step(name="🎤 Processing voice message...") as step:
+                try:
+                    files = {"file": ("audio.wav", audio_buffer, "audio/wav")}
+                    data = {"thread_id": thread.id}
+                    
+                    response = requests.post(
+                        speech_api_url,
+                        files=files,
+                        data=data,
+                        timeout=REQUEST_TIMEOUT
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        step.output = "✅ Voice message processed"
+                        
+                        # Show transcription
+                        transcription = result.get("transcription", "")
+                        if transcription:
+                            await cl.Message(
+                                author="You",
+                                type="user_message",
+                                content=f"🎤 *{transcription}*",
+                                elements=[input_audio_el],
+                            ).send()
+                        
+                        # Show response
+                        answer = result.get("answer", "I apologize, but I didn't receive a proper response.")
+                        if result.get("error"):
+                            error_note = f"\n\n⚠️ *Note: {result.get('error')}*"
+                            answer += error_note
+                        
+                        await cl.Message(content=answer).send()
+                        
+                    else:
+                        step.output = f"❌ Error: {response.status_code}"
+                        await cl.Message(content="❌ Sorry, I couldn't process your voice message. Please try again.").send()
+                        
+                except Exception as e:
+                    step.output = f"❌ Error: {str(e)}"
+                    await cl.Message(content=f"❌ Error processing voice message: {str(e)}").send()
+                    
+        except Exception as e:
+            await cl.Message(content=f"❌ Error processing audio: {str(e)}").send()
 
 async def call_backend_with_retry(data, retries=MAX_RETRIES):
     """Call backend API with retry logic and timeout handling"""
@@ -190,4 +343,4 @@ async def on_message(msg: cl.Message):
 
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
-    run_chainlit(__file__)    
+    run_chainlit(__file__)

@@ -3,11 +3,13 @@ import sys
 import time
 import re
 import json
+import io
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import AzureAISearchTool
 from azure.ai.projects.models import ToolSet
 from azure.search.documents import SearchClient
+from openai import AzureOpenAI
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from utils.env_util import get_aifound_proj_conn_string, get_aisearch_conn
 
@@ -23,6 +25,17 @@ project_client = AIProjectClient.from_connection_string(
     credential=DefaultAzureCredential(),
     conn_str=connection_string,
 )
+
+# Initialize Azure OpenAI client for Whisper
+credential = DefaultAzureCredential()
+token = credential.get_token("https://cognitiveservices.azure.com/.default")
+
+openai_client = AzureOpenAI(
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    azure_ad_token=token.token,
+    api_version=os.environ.get("AZURE_WHISPER_API_VERSION", "2024-06-01")
+)
+
 index_name = os.environ["AZURE_SEARCH_INDEX"]
 
 aisearch_conn_id = get_aisearch_conn()
@@ -61,6 +74,45 @@ agent = project_client.agents.create_agent(
     """,
     toolset=toolset
 )
+
+def speech_to_text(audio_file_content: bytes, filename: str = "audio.wav") -> str:
+    """Convert speech to text using Azure OpenAI Whisper model with Entra ID authentication"""
+    try:
+        # Refresh token for the request
+        credential = DefaultAzureCredential()
+        token = credential.get_token("https://cognitiveservices.azure.com/.default")
+        
+        # Create client specifically for Whisper with appropriate API version
+        whisper_client = AzureOpenAI(
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+            azure_ad_token=token.token,
+            api_version=os.environ.get("AZURE_WHISPER_API_VERSION", "2024-06-01")  # Use specific API version for Whisper
+        )
+        
+        # Create a file-like object from bytes
+        audio_file = io.BytesIO(audio_file_content)
+        audio_file.name = filename
+        
+        # Call Whisper API
+        model_name = os.getenv("AZURE_WHISPER_MODEL", "whisper")
+        print(f"🎤 Calling Whisper model: {model_name}")
+        
+        response = whisper_client.audio.transcriptions.create(
+            model=model_name,  # Use configured Whisper model name
+            file=audio_file,
+            response_format="text"
+        )
+        
+        result_text = response if isinstance(response, str) else response.text
+        print(f"✅ Transcription successful: {result_text[:100]}...")
+        
+        return result_text
+        
+    except Exception as e:
+        print(f"❌ Error in speech_to_text: {e}")
+        import traceback
+        traceback.print_exc()
+        raise Exception(f"Speech-to-text conversion failed: {str(e)}")
 
 def extract_search_results_from_run_steps(run_steps_data):
     """Extract search results from run steps to build citation mapping"""
@@ -590,3 +642,26 @@ def generate_response_agent(question, thread_id):
             "answer": "I apologize, but I encountered an unexpected error. Please try again.",
             "error": str(e)
         }
+
+def transcribe_audio_to_text(audio_file_path):
+    """Transcribe audio file to text using Azure OpenAI Whisper"""
+    try:
+        print(f"📼 Transcribing audio file: {audio_file_path}")
+        
+        # Read the audio file
+        with io.open(audio_file_path, "rb") as audio_file:
+            audio_data = audio_file.read()
+        
+        # Call Azure OpenAI Whisper for transcription
+        response = openai_client.audio.transcribe(
+            audio=audio_data,
+            model="whisper-1",
+            response_format="text"
+        )
+        
+        print(f"✅ Transcription successful")
+        return response["text"]
+    
+    except Exception as e:
+        print(f"❌ Error transcribing audio: {e}")
+        return None
